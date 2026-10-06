@@ -1,0 +1,100 @@
+{
+  "project_info": {
+    "project_number": "874814033400",
+    "project_id": "kycsuperadmin",
+    "storage_bucket": "kycsuperadmin.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874814033400:android:ba28344f079a6a1613da0d",
+        "android_client_info": {
+          "package_name": "com.kycsuperadmin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "874814033400-pdamqp6o1osu6jj1012pofnv1vc7ptct.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.kycsuperadmin",
+            "certificate_hash": "9117ad49927cfc4aa4c31ce0fbd1eb2b2858b786"
+          }
+        },
+        {
+          "client_id": "874814033400-vm0qhnrsq2hrfgh7luacclmi7po5tofb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmZuIneRnIpOtGB-9b9mk8MKPQwqMXq3M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "874814033400-vm0qhnrsq2hrfgh7luacclmi7po5tofb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "874814033400-7r4jp6paojm9tuimvfvcj0j73verkn3m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.meonkycadmin",
+                "app_store_id": "6740072910"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:874814033400:android:6e7c33061f5c836e13da0d",
+        "android_client_info": {
+          "package_name": "com.meonkycadmin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "874814033400-3a4hn5qi25qk80ahtgcl9c7lsjh3tpkt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.meonkycadmin",
+            "certificate_hash": "5af874862d1f9639ecf563d78cbecab90f2c686d"
+          }
+        },
+        {
+          "client_id": "874814033400-vm0qhnrsq2hrfgh7luacclmi7po5tofb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCmZuIneRnIpOtGB-9b9mk8MKPQwqMXq3M"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "874814033400-vm0qhnrsq2hrfgh7luacclmi7po5tofb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "874814033400-7r4jp6paojm9tuimvfvcj0j73verkn3m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.meonkycadmin",
+                "app_store_id": "6740072910"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

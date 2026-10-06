@@ -1,0 +1,289 @@
+diff --git a/lib/pages/home_page.dart b/lib/pages/home_page.dart
+index 9ac3556..2b3ff09 100644
+--- a/lib/pages/home_page.dart
++++ b/lib/pages/home_page.dart
+@@ -1777,14 +1777,16 @@ class _HomePageState extends State<HomePage> {
+ 
+     // Only send fields for the active step — not entire accumulated formData.
+     if (fieldList != null && position != 'segments') {
+-      final filtered = filterKycPostV2BodyForStep(
+-        data: data,
+-        fields: fieldList,
+-        runtimeFieldVisibility: _formNotifier.fieldVisibility,
+-        company: widget.company,
+-        position: nomineePos,
+-        pageLabel: nomineeLbl,
+-      );
++      final filtered = isNomineeExtendedUiStep(nomineePos, nomineeLbl)
++          ? buildNomineeKycPostV2Body(data: data, fields: fieldList)
++          : filterKycPostV2BodyForStep(
++              data: data,
++              fields: fieldList,
++              runtimeFieldVisibility: _formNotifier.fieldVisibility,
++              company: widget.company,
++              position: nomineePos,
++              pageLabel: nomineeLbl,
++            );
+       data
+         ..clear()
+         ..addAll(filtered);
+@@ -2502,8 +2504,19 @@ class _HomePageState extends State<HomePage> {
+         debugPrint('[HomePage] DigiLocker step: save=true on kyc-post-v2');
+       }
+ 
+-      debugPrint('[HomePage] _handleCommonSubmit data: $data pathSegment: $pathSegment');
+-      
++      final pageLabelForSubmit = ctx?['page']?['data']?['label']?.toString();
++      if (isNomineeExtendedUiStep(currentPosition, pageLabelForSubmit)) {
++        logNomineeKycPostPayloadDiagnostics(
++          data: data,
++          position: currentPosition,
++          pageLabel: pageLabelForSubmit,
++        );
++      }
++
++      debugPrint(
++        '[HomePage] _handleCommonSubmit data keys=${data.length} pathSegment=$pathSegment',
++      );
++
+       // Check saveFilesAPI flag from context.page
+       final page = ctx?['page'] as Map?;
+       final saveFilesAPI = page?['saveFilesAPI'] == true;
+@@ -2588,6 +2601,10 @@ class _HomePageState extends State<HomePage> {
+         debugPrint('[HomePage] Using multipart/form-data (file upload detected, saveFilesAPI=false)');
+         res = await client.postMultipart(() async {
+           final req = http.MultipartRequest('POST', Uri.parse(fullUrl));
++          final nomineeStep = isNomineeExtendedUiStep(
++            currentPosition,
++            pageLabelForSubmit,
++          );
+           for (final e in data.entries) {
+             final v = e.value;
+             if (v is File) {
+@@ -2595,15 +2612,37 @@ class _HomePageState extends State<HomePage> {
+               debugPrint('[HomePage] Added file: ${e.key} = ${v.path}');
+             } else if (v is bool) {
+               req.fields[e.key] = v.toString();
+-            } else if (v != null && v.toString().isNotEmpty) {
++            } else if (v != null &&
++                (v.toString().isNotEmpty || nomineeStep)) {
+               req.fields[e.key] = v.toString();
+             }
+           }
++          if (nomineeStep) {
++            logNomineeKycPostPayloadDiagnostics(
++              data: data,
++              position: currentPosition,
++              pageLabel: pageLabelForSubmit,
++              wireMultipartFields: req.fields,
++            );
++          }
+           return req;
+         });
+       } else {
+         // Use JSON for non-file submissions (or after files uploaded separately)
+         debugPrint('[HomePage] Using application/json (no files or files already uploaded)');
++        if (isNomineeExtendedUiStep(currentPosition, pageLabelForSubmit)) {
++          final wire = <String, String>{};
++          for (final e in data.entries) {
++            if (e.value is File) continue;
++            wire[e.key] = e.value?.toString() ?? '';
++          }
++          logNomineeKycPostPayloadDiagnostics(
++            data: data,
++            position: currentPosition,
++            pageLabel: pageLabelForSubmit,
++            wireMultipartFields: wire,
++          );
++        }
+         res = await client.post(
+           endpoint,
+           body: data,
+diff --git a/lib/utils/field_validators.dart b/lib/utils/field_validators.dart
+index b0a9122..99a15fc 100644
+--- a/lib/utils/field_validators.dart
++++ b/lib/utils/field_validators.dart
+@@ -1,3 +1,6 @@
++import 'dart:io';
++
++import 'package:flutter/foundation.dart';
+ import 'package:meon_kyc/utils/conditional_flow.dart';
+ import 'package:meon_kyc/utils/kyc_date_utils.dart';
+ 
+@@ -1735,6 +1738,176 @@ void syncNomineePercentageSideEffects({
+   );
+ }
+ 
++/// Hidden computed nominee totals — always included on nominee kyc-post when present.
++const List<String> kNomineeComputedSubmitFieldNames = [
++  kTotalNomineePercentageField,
++  kTotalNomineePercentage2Field,
++  kRemainNomineePercentField,
++  kRemainNomineePercent2Field,
++];
++
++bool isSubmittableNomineeStepField(Map<dynamic, dynamic> field) {
++  final name = field['name']?.toString();
++  if (name == null || name.isEmpty) return false;
++  if (isNomineeBackendOnlyField(name)) return false;
++  final type = (field['type']?.toString() ?? '').toLowerCase();
++  return type != 'button' && type != 'hidden';
++}
++
++/// Backend expects every step field: filled values as-is, unused slots as `''`.
++String normalizeNomineeKycPostFieldValue(dynamic value) {
++  if (value == null) return '';
++  if (value is bool) return value ? 'true' : '';
++  final s = value.toString();
++  if (s.trim().toLowerCase() == 'false') return '';
++  return s;
++}
++
++/// Nominee / additional_nominee*: all API fields on the step, blanks for slots not opened.
++Map<String, dynamic> buildNomineeKycPostV2Body({
++  required Map<String, dynamic> data,
++  required List<dynamic>? fields,
++}) {
++  final out = <String, dynamic>{};
++  if (fields == null || fields.isEmpty) {
++    return Map<String, dynamic>.from(data);
++  }
++
++  for (final f in fields) {
++    if (f is! Map) continue;
++    final field = Map<dynamic, dynamic>.from(f);
++    if (!isSubmittableNomineeStepField(field)) continue;
++    final name = field['name']?.toString();
++    if (name == null || name.isEmpty) continue;
++    final type = (field['type']?.toString() ?? '').toLowerCase();
++    if (type == 'file') {
++      final v = data[name];
++      if (v is File) out[name] = v;
++      continue;
++    }
++    out[name] = normalizeNomineeKycPostFieldValue(data[name]);
++  }
++
++  for (final name in kNomineeComputedSubmitFieldNames) {
++    if (data.containsKey(name)) {
++      out[name] = normalizeNomineeKycPostFieldValue(data[name]);
++    }
++  }
++
++  return out;
++}
++
++/// Keys backend uses for nominee-step routing / completion signals.
++const List<String> kNomineeRoutingDiagnosticKeys = [
++  'add_nominee',
++  kExtraNomineeField,
++  kTotalNomineePercentageField,
++  kTotalNomineePercentage2Field,
++  kRemainNomineePercentField,
++  kRemainNomineePercent2Field,
++  kAddSecondNomineeField,
++  kAddThirdNomineeField,
++  'nominee_1_percentage',
++  'nominee_2_percentage',
++  'nominee_3_percentage',
++  'nominee3_percentage',
++  'nominee_3_percentage',
++];
++
++bool nomineeMultipartWouldSendField(
++  dynamic value, {
++  String? position,
++  String? pageLabel,
++}) {
++  if (value is File) return true;
++  if (value is bool) return true;
++  if (value == null) return false;
++  if (isNomineeExtendedUiStep(position, pageLabel)) return true;
++  return value.toString().isNotEmpty;
++}
++
++/// Debug: exact payload keys/values for backend proof (not truncated like multipart dump).
++void logNomineeKycPostPayloadDiagnostics({
++  required Map<String, dynamic> data,
++  String? position,
++  String? pageLabel,
++  Map<String, String>? wireMultipartFields,
++}) {
++  if (!isNomineeExtendedUiStep(position, pageLabel)) return;
++
++  debugPrint('[NomineeSubmit] ========== PAYLOAD DIAGNOSTICS ==========');
++  debugPrint(
++    '[NomineeSubmit] step position=$position pageLabel=$pageLabel keys=${data.length}',
++  );
++
++  for (final key in kNomineeRoutingDiagnosticKeys) {
++    final inData = data.containsKey(key);
++    final raw = inData ? data[key] : null;
++    final valueDesc = !inData
++        ? '(key missing from data map)'
++        : raw is File
++            ? '<File>'
++            : '"${raw.toString()}" (len=${raw.toString().length})';
++    final wouldSend = nomineeMultipartWouldSendField(
++      raw,
++      position: position,
++      pageLabel: pageLabel,
++    );
++    final onWire = wireMultipartFields == null
++        ? 'n/a'
++        : wireMultipartFields.containsKey(key).toString();
++    final wireVal = wireMultipartFields?[key];
++    debugPrint(
++      '[NomineeSubmit] CRITICAL $key | data.containsKey=$inData | '
++      'dataValue=$valueDesc | appWouldSend=$wouldSend | '
++      'wire.containsKey=$onWire | wireValue=${wireVal == null ? "(none)" : "\"$wireVal\""}',
++    );
++  }
++
++  final blankSamples = <String>[];
++  for (final e in data.entries) {
++    if (e.value is File) continue;
++    final s = e.value?.toString() ?? '';
++    if (s.isEmpty) blankSamples.add(e.key);
++  }
++  blankSamples.sort();
++  debugPrint(
++    '[NomineeSubmit] blank string fields count=${blankSamples.length}',
++  );
++  if (blankSamples.isNotEmpty) {
++    debugPrint('[NomineeSubmit] blank samples: ${blankSamples.take(25).join(", ")}');
++    if (blankSamples.length > 25) {
++      debugPrint('[NomineeSubmit] ... +${blankSamples.length - 25} more blank keys');
++    }
++  }
++
++  final keys = data.keys.toList()..sort();
++  const chunkSize = 12;
++  for (var i = 0; i < keys.length; i += chunkSize) {
++    final end = (i + chunkSize < keys.length) ? i + chunkSize : keys.length;
++    final chunk = keys.sublist(i, end);
++    final parts = <String>[];
++    for (final k in chunk) {
++      final v = data[k];
++      if (v is File) {
++        parts.add('$k:<file>');
++      } else {
++        final s = v?.toString() ?? 'null';
++        final short = s.length > 30 ? '${s.substring(0, 30)}…' : s;
++        parts.add('$k:"$short"');
++      }
++    }
++    debugPrint('[NomineeSubmit] allKeys[$i-${end - 1}]: ${parts.join(' | ')}');
++  }
++
++  if (wireMultipartFields != null) {
++    debugPrint(
++      '[NomineeSubmit] wire multipart field count=${wireMultipartFields.length}',
++    );
++  }
++  debugPrint('[NomineeSubmit] ========================================');
++}
++
+ void applyNomineeStepSubmitPayload({
+   required Map<String, dynamic> data,
+   required List<dynamic>? fields,

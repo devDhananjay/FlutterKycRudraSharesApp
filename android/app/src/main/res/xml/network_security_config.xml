@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Allow cleartext only for Meon RPD success callbacks that still use http:// -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">meon.co.in</domain>
+        <domain includeSubdomains="true">stoxbox.in</domain>
+    </domain-config>
+</network-security-config>

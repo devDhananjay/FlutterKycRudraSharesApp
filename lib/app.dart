@@ -15,7 +15,7 @@ class MeonKycApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'Meon KYC',
+      title: 'Rudra Shares KYC',
       debugShowCheckedModeBanner: false,
       theme: KycTheme.theme,
       builder: (context, child) {

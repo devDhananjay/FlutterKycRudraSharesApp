@@ -63,13 +63,10 @@ class _ConnectivitySplashLoader extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ClipRRect(
-                borderRadius: BorderRadius.all(Radius.circular(12)),
-                child: Image(
-                  image: AssetImage(AppAssets.stoxboxLogo),
-                  height: 96,
-                  fit: BoxFit.contain,
-                ),
+              Image(
+                image: AssetImage(AppAssets.rudraLogo),
+                height: 88,
+                fit: BoxFit.contain,
               ),
               SizedBox(height: 28),
               SizedBox(

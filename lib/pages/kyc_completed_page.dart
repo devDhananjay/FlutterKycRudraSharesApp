@@ -102,8 +102,10 @@ class _KycCompletedPageState extends State<KycCompletedPage> {
     final completedSteps = _getCompletedSteps(data);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+      backgroundColor: Colors.transparent,
+      body: Container(
+        decoration: const BoxDecoration(gradient: KycTheme.pageGradient),
+        child: SafeArea(
         child: Stack(
           children: [
             Column(
@@ -125,7 +127,7 @@ class _KycCompletedPageState extends State<KycCompletedPage> {
                           height: 120,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.green.withOpacity(0.1),
+                            color: KycTheme.success.withOpacity(0.1),
                           ),
                         ),
                         // Middle ring
@@ -134,7 +136,7 @@ class _KycCompletedPageState extends State<KycCompletedPage> {
                           height: 100,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.green.withOpacity(0.15),
+                            color: KycTheme.success.withOpacity(0.15),
                           ),
                         ),
                         // Inner circle with checkmark
@@ -143,7 +145,7 @@ class _KycCompletedPageState extends State<KycCompletedPage> {
                           height: 80,
                           decoration: const BoxDecoration(
                             shape: BoxShape.circle,
-                            color: Colors.green,
+                            color: KycTheme.success,
                           ),
                           child: const Icon(
                             Icons.check,
@@ -156,11 +158,11 @@ class _KycCompletedPageState extends State<KycCompletedPage> {
                     const SizedBox(height: 25),
                     // KYC Completed heading
                     const Text(
-                      'KYC Completed',
+                      'Application submitted',
                       style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: KycTheme.textPrimary,
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -169,7 +171,7 @@ class _KycCompletedPageState extends State<KycCompletedPage> {
                       'Your account will be verified in 48 hr',
                       style: TextStyle(
                         fontSize: 15,
-                        color: Colors.grey[600],
+                        color: KycTheme.textSecondary,
                       ),
                     ),
                     const SizedBox(height: 40),
@@ -279,13 +281,17 @@ class _KycCompletedPageState extends State<KycCompletedPage> {
               child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: IconButton(
-                  icon: const Icon(Icons.logout, color: KycTheme.textPrimary),
+                  icon: const Icon(
+                    Icons.power_settings_new_rounded,
+                    color: KycTheme.exitRed,
+                  ),
                   onPressed: () => _showLogoutConfirmation(context),
                 ),
               ),
             ),
           ],
         ),
+      ),
       ),
     );
   }

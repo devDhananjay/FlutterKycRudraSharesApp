@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:meon_kyc/components/gradient_cta_button.dart';
 import 'package:meon_kyc/theme/kyc_theme.dart';
 
 /// Trading segments selection UI as per design.
@@ -264,47 +265,11 @@ class _SegmentsSelectionState extends State<SegmentsSelection> {
           const SizedBox(height: 16),
 
         if (widget.onSubmit != null)
-          ElevatedButton(
-            onPressed: widget.submitLoading ? null : widget.onSubmit,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: KycTheme.primary,
-              disabledBackgroundColor: KycTheme.primary.withValues(alpha: 0.5),
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: widget.submitLoading
-                ? const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      ),
-                      SizedBox(width: 12),
-                      Text(
-                        'Processing...',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ],
-                  )
-                : const Text(
-                    'Next',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          GradientCtaButton(
+            label: 'Next',
+            loadingLabel: 'Processing...',
+            isLoading: widget.submitLoading,
+            onPressed: widget.onSubmit,
           ),
       ],
     );
@@ -329,9 +294,11 @@ class _SegmentsSelectionState extends State<SegmentsSelection> {
             width: 22,
             height: 22,
             decoration: BoxDecoration(
-              color: value ? KycTheme.buttonEnabledPurple : Colors.transparent,
+              color: value ? KycTheme.selectedRadio : Colors.transparent,
               border: Border.all(
-                color: KycTheme.buttonEnabledPurple,
+                color: value
+                    ? KycTheme.selectedRadio
+                    : KycTheme.border,
                 width: 2,
               ),
               borderRadius: BorderRadius.circular(6),

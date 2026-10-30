@@ -1,27 +1,39 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// Design tokens from ZO Invest (https://www.zoinvest.in)
+/// Rudra Shares KYC design tokens (Figma: Rudra_Inappkyc Light-Mode).
 class KycTheme {
   KycTheme._();
 
-  // ZO Invest — deep navy + teal accent
-  static const Color primary = Color(0xFF001C3E);
-  static const Color primaryDark = Color(0xFF00122A);
-  static const Color primaryLight = Color(0xFF00C896);
+  // Brand — deep red + warm gold accent
+  static const Color primary = Color(0xFFB71C1C);
+  static const Color primaryDark = Color(0xFF8B0000);
+  static const Color primaryLight = Color(0xFFE85D04);
+  static const Color brandGold = Color(0xFFD4A017);
 
-  // Header & primary CTA (names kept for existing call sites)
-  static const Color headerDarkPurple = Color(0xFF001C3E);
-  static const Color buttonEnabledPurple = Color(0xFF00C896);
-  static const Color buttonDisabledPurple = Color(0xFFB8EDE0);
+  // Header & primary CTA (legacy names kept for existing call sites)
+  static const Color headerDarkPurple = Color(0xFFB71C1C);
+  static const Color buttonEnabledPurple = Color(0xFFB71C1C);
+  static const Color buttonDisabledPurple = Color(0xFFE8B4B4);
 
-  // Neutrals
-  static const Color background = Color(0xFFF7FAFC);
+  // CTA gradient (red → orange)
+  static const Color ctaGradientStart = Color(0xFFC62828);
+  static const Color ctaGradientEnd = Color(0xFFE85D04);
+
+  // Selected option cards (yellow/gold)
+  static const Color selectedCardBorder = Color(0xFFE8A838);
+  static const Color selectedCardFill = Color(0xFFFFF6E0);
+  static const Color selectedRadio = Color(0xFFF5C542);
+
+  // Neutrals — soft peach page wash
+  static const Color background = Color(0xFFFFF8F3);
+  static const Color backgroundPeach = Color(0xFFFFE8DC);
   static const Color surface = Colors.white;
-  static const Color textPrimary = Color(0xFF001C3E);
-  static const Color textSecondary = Color(0xFF667085);
-  static const Color border = Color(0xFFE2E8F0);
-  static const Color success = Color(0xFF00C896);
+  static const Color textPrimary = Color(0xFF1A1A1A);
+  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color border = Color(0xFFE5E7EB);
+  static const Color success = Color(0xFF2E7D32);
+  static const Color exitRed = Color(0xFFE53935);
 
   // Spacing (8px grid)
   static const double spacingXs = 4;
@@ -36,6 +48,7 @@ class KycTheme {
   static const double radiusSm = 8;
   static const double radiusMd = 12;
   static const double radiusLg = 16;
+  static const double radiusXl = 18;
 
   // Typography
   static const double fontSizeCaption = 12;
@@ -44,6 +57,23 @@ class KycTheme {
   static const double fontSizeTitleSm = 18;
   static const double fontSizeTitle = 22;
   static const double fontSizeHero = 24;
+
+  static const LinearGradient ctaGradient = LinearGradient(
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+    colors: [ctaGradientStart, ctaGradientEnd],
+  );
+
+  static const LinearGradient pageGradient = LinearGradient(
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [
+      Color(0xFFFFF5EE),
+      Color(0xFFFFFBF8),
+      Color(0xFFFFFFFF),
+    ],
+    stops: [0.0, 0.45, 1.0],
+  );
 
   static List<BoxShadow> get cardShadow => [
         BoxShadow(
@@ -74,7 +104,7 @@ class KycTheme {
       colorScheme: ColorScheme.fromSeed(
         seedColor: primary,
         primary: primary,
-        secondary: primaryLight,
+        secondary: brandGold,
         surface: surface,
         brightness: Brightness.light,
       ),
@@ -92,7 +122,7 @@ class KycTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: buttonEnabledPurple,
+          backgroundColor: ctaGradientStart,
           foregroundColor: Colors.white,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
@@ -127,7 +157,7 @@ class KycTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: primaryLight, width: 2),
+          borderSide: const BorderSide(color: selectedCardBorder, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -138,13 +168,20 @@ class KycTheme {
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) return primaryLight;
+          if (states.contains(WidgetState.selected)) return selectedRadio;
           return Colors.transparent;
         }),
         checkColor: WidgetStateProperty.all(Colors.white),
+        side: const BorderSide(color: border, width: 1.5),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(4),
         ),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) return selectedRadio;
+          return textSecondary;
+        }),
       ),
     );
   }

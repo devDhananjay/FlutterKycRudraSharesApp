@@ -342,19 +342,21 @@ class _FormFieldWidgetState extends State<FormFieldWidget> {
   }
 
   Widget _buildLabel(String text) {
+    // Figma Start KYC: "Mobile Number" without asterisk
+    final showStar = widget.mandatory && !_isMobileField;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Text.rich(
         TextSpan(
-          style: const TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
+          style: TextStyle(
+            fontSize: _isMobileField ? 15 : 14,
+            fontWeight: FontWeight.w600,
             color: KycTheme.textPrimary,
             height: 1.35,
           ),
           children: [
             TextSpan(text: text),
-            if (widget.mandatory)
+            if (showStar)
               TextSpan(
                 text: ' *',
                 style: TextStyle(
@@ -580,7 +582,8 @@ class _FormFieldWidgetState extends State<FormFieldWidget> {
       fillColor: KycTheme.surface,
       border: _outlineFieldBorder(),
       enabledBorder: _outlineFieldBorder(),
-      focusedBorder: _outlineFieldBorder(color: KycTheme.primary, width: 2),
+      focusedBorder:
+          _outlineFieldBorder(color: KycTheme.selectedCardBorder, width: 1.5),
       disabledBorder: _outlineFieldBorder(),
       errorBorder: _outlineFieldBorder(color: Colors.red),
       focusedErrorBorder: _outlineFieldBorder(color: Colors.red, width: 2),
@@ -735,29 +738,52 @@ class _FormFieldWidgetState extends State<FormFieldWidget> {
                       : null,
           onChanged: (v) => widget.onChange(widget.name, v),
           decoration: _fieldInputDecoration(
-            hintText: _isMobileField ? 'Enter Mobile number *' : '${widget.displayName}',
+            hintText: _isMobileField
+                ? 'Enter 10-digit mobile number'
+                : '${widget.displayName}',
             prefixIcon: _isMobileField ? null : _getFieldIcon(),
-            prefix: _isMobileField
-                ? Padding(
-                    padding: const EdgeInsets.only(left: 16, right: 12),
-                    child: Text(
-                      '+91',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: KycTheme.textSecondary,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  )
-                : null,
             counterText: (_isMobileField ||
                     _isPanField ||
                     _isNoSpecialCharacterField ||
                     _isTradingExperienceField)
                 ? ''
                 : null,
+          ).copyWith(
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
         ),
+        if (_isMobileField) ...[
+          const SizedBox(height: 10),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 18,
+                height: 18,
+                margin: const EdgeInsets.only(top: 1),
+                decoration: const BoxDecoration(
+                  color: KycTheme.success,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, size: 12, color: Colors.white),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  "We'll send an OTP to verify this number",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: KycTheme.textSecondary,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -808,11 +834,40 @@ class _FormFieldWidgetState extends State<FormFieldWidget> {
                   : null,
           onChanged: (v) => widget.onChange(widget.name, v),
           decoration: _fieldInputDecoration(
-            hintText: _isMobileField ? 'Enter Mobile number *' : '${widget.displayName}',
-            prefixIcon: _getFieldIcon(),
+            hintText: _isMobileField
+                ? 'Enter 10-digit mobile number'
+                : '${widget.displayName}',
+            prefixIcon: _isMobileField ? null : _getFieldIcon(),
             counterText: (_isMobileField || _isTradingExperienceField) ? '' : null,
           ),
         ),
+        if (_isMobileField) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              Container(
+                width: 18,
+                height: 18,
+                decoration: const BoxDecoration(
+                  color: KycTheme.success,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check, size: 12, color: Colors.white),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  "We'll send an OTP to verify this number",
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: KycTheme.textSecondary,
+                    height: 1.35,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -1117,33 +1172,73 @@ class _FormFieldWidgetState extends State<FormFieldWidget> {
 
   Widget _buildRadio() {
     final options = widget.values ?? [];
-    // Short Yes/No style → one row; longer option lists wrap without overflow.
+    // Short Yes/No style → one row of cards; longer lists stack vertically (Figma).
     final compactRow = options.length == 2 &&
         options.every((o) => o.toString().trim().length <= 4);
 
-    Widget optionChip(dynamic opt) {
+    Widget optionCard(dynamic opt) {
       final label = opt.toString();
-      return InkWell(
-        onTap: widget.disable
-            ? null
-            : () => widget.onChange(widget.name, label),
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Radio<String>(
-                value: label,
-                groupValue: widget.value?.toString(),
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-                onChanged: widget.disable
-                    ? null
-                    : (v) => widget.onChange(widget.name, v ?? ''),
+      final selected = widget.value?.toString() == label;
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.disable
+              ? null
+              : () => widget.onChange(widget.name, label),
+          borderRadius: BorderRadius.circular(KycTheme.radiusMd),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: selected ? KycTheme.selectedCardFill : KycTheme.surface,
+              borderRadius: BorderRadius.circular(KycTheme.radiusMd),
+              border: Border.all(
+                color: selected ? KycTheme.selectedCardBorder : KycTheme.border,
+                width: selected ? 1.5 : 1,
               ),
-              Text(label, style: const TextStyle(fontSize: 15)),
-            ],
+              gradient: selected
+                  ? const LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        Color(0xFFFFF8E8),
+                        Color(0xFFFFFFFF),
+                      ],
+                    )
+                  : null,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: selected ? FontWeight.w600 : FontWeight.w500,
+                      color: KycTheme.textPrimary,
+                    ),
+                  ),
+                ),
+                Container(
+                  width: 22,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? KycTheme.selectedRadio : Colors.transparent,
+                    border: Border.all(
+                      color: selected
+                          ? KycTheme.selectedRadio
+                          : KycTheme.border,
+                      width: 2,
+                    ),
+                  ),
+                  child: selected
+                      ? const Icon(Icons.circle, size: 10, color: Colors.white)
+                      : null,
+                ),
+              ],
+            ),
           ),
         ),
       );
@@ -1153,19 +1248,24 @@ class _FormFieldWidgetState extends State<FormFieldWidget> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildLabel(widget.displayName),
-        const SizedBox(height: 4),
+        const SizedBox(height: 8),
         if (compactRow)
           Row(
             children: [
-              for (final opt in options)
-                Expanded(child: optionChip(opt)),
+              for (var i = 0; i < options.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(child: optionCard(options[i])),
+              ],
             ],
           )
         else
-          Wrap(
-            spacing: 4,
-            runSpacing: 0,
-            children: [for (final opt in options) optionChip(opt)],
+          Column(
+            children: [
+              for (var i = 0; i < options.length; i++) ...[
+                if (i > 0) const SizedBox(height: 10),
+                optionCard(options[i]),
+              ],
+            ],
           ),
       ],
     );

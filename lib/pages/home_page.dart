@@ -18,7 +18,9 @@ import 'package:meon_kyc/api/leadsquared_api.dart';
 import 'package:meon_kyc/api/sso_api.dart';
 import 'package:meon_kyc/sso/sso_temp_credentials_gate.dart';
 import 'package:meon_kyc/components/form_field_widget.dart';
+import 'package:meon_kyc/components/gradient_cta_button.dart';
 import 'package:meon_kyc/components/kyc_layout.dart';
+import 'package:meon_kyc/components/kyc_page_background.dart';
 import 'package:meon_kyc/components/kyc_stepper_bar.dart';
 import 'package:meon_kyc/components/kyc_note_box.dart';
 import 'package:meon_kyc/components/loader.dart';
@@ -2021,7 +2023,7 @@ class _HomePageState extends State<HomePage> {
     required bool isMobileStep,
     required Map? submitButton,
   }) {
-    if (isMobileStep) return 'Submit';
+    if (isMobileStep) return 'Proceed';
     var s = (submitButton?['buttonName'] ?? 'Submit').toString().trim();
     if (s.isEmpty) s = 'Submit';
     while (true) {
@@ -4374,6 +4376,32 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  void _showHelpDialog() {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(KycTheme.radiusLg),
+        ),
+        title: const Text(
+          'Need help?',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        content: const Text(
+          'For assistance with your KYC, contact Rudra Shares support. '
+          'You can also refresh this step or exit and continue later.',
+          style: TextStyle(height: 1.45, color: KycTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildAuthenticatedHeaderActions(
     AppStore store, {
     VoidCallback? onRefreshOverride,
@@ -4385,7 +4413,7 @@ class _HomePageState extends State<HomePage> {
         (_loadWorkflowActive && !_ssoInProgress);
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(8, 4, 4, 0),
+      padding: const EdgeInsets.fromLTRB(8, 4, 8, 0),
       child: SizedBox(
         height: 48,
         child: Stack(
@@ -4393,7 +4421,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             if (position != null)
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 96),
+                padding: const EdgeInsets.symmetric(horizontal: 108),
                 child: _buildHeaderPositionText(position),
               ),
             Align(
@@ -4401,9 +4429,9 @@ class _HomePageState extends State<HomePage> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  IconButton(
-                    tooltip: 'Refresh',
-                    onPressed: (refreshBusy || _logoutLoading)
+                  // Long-press Help to refresh (Figma shows Help; refresh kept as gesture)
+                  GestureDetector(
+                    onLongPress: (refreshBusy || _logoutLoading)
                         ? null
                         : () async {
                             if (onRefreshOverride != null) {
@@ -4417,19 +4445,49 @@ class _HomePageState extends State<HomePage> {
                             }
                             await _refreshWorkflowFromHeader(store);
                           },
-                    icon: refreshBusy
-                        ? const SizedBox(
-                            width: 24,
-                            height: 24,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: KycTheme.primary,
-                            ),
-                          )
-                        : const Icon(Icons.refresh, color: KycTheme.textPrimary),
+                    child: TextButton.icon(
+                      onPressed: _showHelpDialog,
+                      style: TextButton.styleFrom(
+                        foregroundColor: KycTheme.textPrimary,
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: Container(
+                        width: 22,
+                        height: 22,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: KycTheme.textSecondary,
+                            width: 1.4,
+                          ),
+                        ),
+                        child: refreshBusy
+                            ? const Padding(
+                                padding: EdgeInsets.all(3),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 1.5,
+                                  color: KycTheme.primary,
+                                ),
+                              )
+                            : const Icon(
+                                Icons.question_mark_rounded,
+                                size: 14,
+                                color: KycTheme.textSecondary,
+                              ),
+                      ),
+                      label: const Text(
+                        'Help',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
                   ),
                   IconButton(
-                    tooltip: 'Logout',
+                    tooltip: 'Exit',
                     onPressed: _logoutLoading ? null : _handleLogout,
                     icon: _logoutLoading
                         ? const SizedBox(
@@ -4437,10 +4495,13 @@ class _HomePageState extends State<HomePage> {
                             height: 24,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: KycTheme.primary,
+                              color: KycTheme.exitRed,
                             ),
                           )
-                        : const Icon(Icons.logout, color: KycTheme.textPrimary),
+                        : const Icon(
+                            Icons.power_settings_new_rounded,
+                            color: KycTheme.exitRed,
+                          ),
                   ),
                 ],
               ),
@@ -4875,11 +4936,19 @@ class _HomePageState extends State<HomePage> {
                 );
               }
 
+              // Figma Start KYC hero — force title even if API sends "mobile"
+              final posKey = (rawPosition ?? '').toLowerCase().trim();
+              final labelKey = (rawPageLabel ?? '').toLowerCase().trim();
+              if (posKey == 'mobile' || labelKey == 'mobile') {
+                pageTitle = 'Start your KYC';
+              }
+
               const showDocumentsSection = false;
 
               return Scaffold(
-                backgroundColor: KycTheme.background,
-                body: SafeArea(
+                backgroundColor: Colors.transparent,
+                body: KycPageBackground(
+                  child: SafeArea(
                   child: showStepper
                       ? Column(
                           children: [
@@ -4958,6 +5027,7 @@ class _HomePageState extends State<HomePage> {
                             ),
                           ],
                         ),
+                  ),
                 ),
               );
             },
@@ -6913,8 +6983,9 @@ class _HomePageState extends State<HomePage> {
     final isOnboardingAuthStep = _isOnboardingAuthStep(position, pageLabel);
     final hideOnboardingFooter =
         kHideOnboardingFormFooter && isOnboardingAuthStep;
-    final showSecurityFooter = !hideOnboardingFooter;
     final isMobileStep = position == 'mobile' || pageLabel == 'mobile';
+    // Figma Start KYC: open layout (no card / lock footer / aadhaar note).
+    final showSecurityFooter = !hideOnboardingFooter && !isMobileStep;
     final addingNominee =
         isNomineeStep && isAddNomineeSelectedYes(_formNotifier.formData);
     final nomineeBlocksSubmit = _isNomineeSubmitDisabled(position, pageLabel);
@@ -6927,16 +6998,7 @@ class _HomePageState extends State<HomePage> {
         _isSendOtpDisabled(position) ||
         nomineeBlocksSubmit;
 
-    return Container(
-      // No outer margin so width matches "Documents to keep Handy" card
-      padding: EdgeInsets.all(isMobileStep ? 20 : KycTheme.spacing2xl),
-      decoration: BoxDecoration(
-        color: KycTheme.surface,
-        borderRadius: BorderRadius.circular(KycTheme.radiusLg),
-        border: Border.all(color: KycTheme.border),
-        boxShadow: KycTheme.cardShadow,
-      ),
-      child: Form(
+    final formBody = Form(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           mainAxisSize: MainAxisSize.min,
@@ -7121,10 +7183,9 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 8),
             ],
-            // Terms & Conditions and Aadhaar note (mobile login step only)
+            // Terms — compact (Figma start screen keeps this light)
             if (isMobileStep) ...[
-              const SizedBox(height: 15),
-              // Custom checkbox (not default Material) + clickable Terms and Conditions
+              const SizedBox(height: 20),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
@@ -7142,12 +7203,12 @@ class _HomePageState extends State<HomePage> {
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
                           color: _termsAccepted
-                              ? KycTheme.primary
+                              ? KycTheme.success
                               : Colors.transparent,
-                          borderRadius: BorderRadius.circular(3),
+                          borderRadius: BorderRadius.circular(4),
                           border: Border.all(
                             color: _termsAccepted
-                                ? KycTheme.primary
+                                ? KycTheme.success
                                 : KycTheme.border,
                             width: 1.5,
                           ),
@@ -7168,13 +7229,13 @@ class _HomePageState extends State<HomePage> {
                       }),
                       child: RichText(
                         text: TextSpan(
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
-                            color: KycTheme.textPrimary,
-                            height: 1.25,
+                            color: KycTheme.textSecondary,
+                            height: 1.3,
                           ),
                           children: [
-                            const TextSpan(text: 'Please accept the '),
+                            const TextSpan(text: 'I accept the '),
                             TextSpan(
                               text: 'Terms and Conditions',
                               style: const TextStyle(
@@ -7196,84 +7257,41 @@ class _HomePageState extends State<HomePage> {
                 const SizedBox(height: 4),
                 Padding(
                   padding: const EdgeInsets.only(left: 28.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(Icons.error_outline, size: 14, color: Colors.red.shade700),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          'Please accept the Terms & Conditions to continue',
-                          style: TextStyle(fontSize: 11, color: Colors.red.shade700),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    'Please accept the Terms & Conditions to continue',
+                    style: TextStyle(fontSize: 11, color: Colors.red.shade700),
                   ),
                 ),
               ],
-              const SizedBox(height: 16),
-              _buildAadhaarNote(),
-              const SizedBox(height: 16),
             ],
-            if (showGenericSubmit) const SizedBox(height: 24),
+            if (showGenericSubmit) const SizedBox(height: 28),
             if (showGenericSubmit)
-            ElevatedButton(
-              onPressed: submitCtaDisabled
-                  ? null
-                  : () {
-                      debugPrint('[HomePage] Submit button clicked! isAuth=$isAuth, position=$position');
-                      // Nominee No: submit as-is (opt-out landing UI removed — do not force Yes).
-                      if (isAuth) {
-                        if (_enforceFatcaTaxResidencyNoOnSubmit(
-                          position: position,
-                          pageLabel: pageLabel,
-                          fieldList: fieldList,
-                        )) {
-                          return;
-                        }
-                        _handleCommonSubmit(false);
-                      } else {
-                        _handleSubmit(false);
-                      }
-                    },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: (isMobileStep || isNomineeStep)
-                    ? (submitCtaDisabled
-                        ? KycTheme.buttonDisabledPurple
-                        : KycTheme.buttonEnabledPurple)
-                    : KycTheme.primary,
-                foregroundColor: Colors.white,
-                minimumSize: Size(double.infinity, isMobileStep ? 52 : 48),
-                padding: const EdgeInsets.symmetric(vertical: KycTheme.spacingLg),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(isMobileStep ? 14 : KycTheme.radiusMd),
+              GradientCtaButton(
+                label: _primarySubmitLabel(
+                  isMobileStep: isMobileStep,
+                  submitButton: submitButton,
                 ),
+                loadingLabel: 'Processing...',
+                isLoading: _submitLoading && !_ssoInProgress,
+                enabled: !submitCtaDisabled,
+                height: isMobileStep ? 54 : 48,
+                onPressed: () {
+                  debugPrint(
+                      '[HomePage] Submit button clicked! isAuth=$isAuth, position=$position');
+                  if (isAuth) {
+                    if (_enforceFatcaTaxResidencyNoOnSubmit(
+                      position: position,
+                      pageLabel: pageLabel,
+                      fieldList: fieldList,
+                    )) {
+                      return;
+                    }
+                    _handleCommonSubmit(false);
+                  } else {
+                    _handleSubmit(false);
+                  }
+                },
               ),
-              child: (_submitLoading && !_ssoInProgress)
-                  ? const Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        ),
-                        SizedBox(width: 12),
-                        Text('Processing...', style: TextStyle(color: Colors.white)),
-                      ],
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          _primarySubmitLabel(
-                            isMobileStep: isMobileStep,
-                            submitButton: submitButton,
-                          ),
-                        ),
-                      ],
-                    ),
-            ),
             if (showGenericSubmit &&
                 submitButton?['showSubmitAnywayButton'] == true) ...[
               const SizedBox(height: 16),
@@ -7336,7 +7354,19 @@ class _HomePageState extends State<HomePage> {
             ],
           ],
         ),
+    );
+
+    // Figma Start KYC is open (no white card). Other steps keep soft card chrome.
+    if (isMobileStep) return formBody;
+    return Container(
+      padding: const EdgeInsets.all(KycTheme.spacing2xl),
+      decoration: BoxDecoration(
+        color: KycTheme.surface.withValues(alpha: 0.96),
+        borderRadius: BorderRadius.circular(KycTheme.radiusXl),
+        border: Border.all(color: KycTheme.border.withValues(alpha: 0.65)),
+        boxShadow: KycTheme.cardShadowSm,
       ),
+      child: formBody,
     );
   }
 
@@ -7382,7 +7412,7 @@ class _HomePageState extends State<HomePage> {
               ),
               const SizedBox(height: 12),
               Text(
-                'By signing up, You agree that TRUEWEALTH representative may contact you telephonically in connection with the services or your registration on the platform or to introduce new product/ service offerings.',
+                'By signing up, you agree that a Rudra Shares representative may contact you telephonically in connection with the services or your registration on the platform or to introduce new product/service offerings.',
                 style: const TextStyle(fontSize: 14, height: 1.5),
               ),
             ],

@@ -1,48 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:meon_kyc/components/gradient_cta_button.dart';
 import 'package:meon_kyc/theme/kyc_theme.dart';
 
 /// Reusable button that shows inline loading state without blocking the UI.
-/// 
-/// Usage:
-/// ```dart
-/// LoadingButton(
-///   onPressed: _handleSubmit,
-///   isLoading: _submitLoading,
-///   label: 'Submit',
-///   loadingLabel: 'Submitting...',
-/// )
-/// ```
+///
+/// Uses Rudra red→orange gradient CTA by default.
 class LoadingButton extends StatelessWidget {
   /// Button label when not loading
   final String label;
-  
+
   /// Button label when loading (e.g., "Submitting...", "Processing...", "Verifying...")
   final String? loadingLabel;
-  
+
   /// Whether the button is currently loading
   final bool isLoading;
-  
+
   /// Callback when button is pressed (null when loading or disabled)
   final VoidCallback? onPressed;
-  
-  /// Custom styling
+
+  /// Custom styling (when set, falls back to solid ElevatedButton)
   final ButtonStyle? style;
-  
+
   /// Button width (default: match parent)
   final double? width;
-  
-  /// Button height (default: 48)
+
+  /// Button height (default: 52)
   final double height;
-  
+
   /// Icon to show before label (optional)
   final IconData? icon;
-  
+
   /// Text style for label
   final TextStyle? textStyle;
-  
+
   /// Loading spinner color (default: white)
   final Color spinnerColor;
-  
+
+  /// When true (default), use Figma gradient CTA.
+  final bool useGradient;
+
   const LoadingButton({
     super.key,
     required this.label,
@@ -51,14 +47,30 @@ class LoadingButton extends StatelessWidget {
     this.onPressed,
     this.style,
     this.width,
-    this.height = 48,
+    this.height = 52,
     this.icon,
     this.textStyle,
     this.spinnerColor = Colors.white,
+    this.useGradient = true,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (useGradient && style == null) {
+      return SizedBox(
+        width: width ?? double.infinity,
+        child: GradientCtaButton(
+          label: label,
+          loadingLabel: loadingLabel,
+          isLoading: isLoading,
+          enabled: onPressed != null,
+          onPressed: onPressed,
+          height: height,
+          icon: icon,
+        ),
+      );
+    }
+
     return SizedBox(
       width: width,
       height: height,
@@ -66,8 +78,9 @@ class LoadingButton extends StatelessWidget {
         onPressed: isLoading ? null : onPressed,
         style: style ??
             ElevatedButton.styleFrom(
-              backgroundColor: KycTheme.primary,
-              disabledBackgroundColor: KycTheme.primary.withValues(alpha: 0.6),
+              backgroundColor: KycTheme.ctaGradientStart,
+              disabledBackgroundColor:
+                  KycTheme.ctaGradientStart.withValues(alpha: 0.6),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(KycTheme.radiusMd),
               ),

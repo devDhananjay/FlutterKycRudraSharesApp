@@ -2,10 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:meon_kyc/theme/kyc_theme.dart';
 import 'package:meon_kyc/components/documents_handy_section.dart';
-import 'package:meon_kyc/components/kyc_stepper_bar.dart';
 import 'package:meon_kyc/utils/assets.dart';
 
-/// KYC screen layout from Figma: logo, optional stepper, content, documents section
+/// KYC screen layout — Rudra Figma: peach wash, brand hero, content, documents.
 class KycLayout extends StatelessWidget {
   final Widget child;
   final String? title;
@@ -28,58 +27,70 @@ class KycLayout extends StatelessWidget {
     this.skipScaffold = false,
   });
 
+  bool get _isStartKycHero {
+    if (title == null) return false;
+    final lower = title!.toLowerCase();
+    return lower.contains('start your kyc');
+  }
+
   /// Builds the page title section.
-  /// Special handling for the "Start your KYC" hero title from Figma:
-  /// first line bold 24, second line subtitle 14.
   Widget _buildTitleSection() {
     if (title == null) return const SizedBox.shrink();
 
     final rawTitle = title!.trim();
     final lower = rawTitle.toLowerCase();
-
     final hasStartKyc = lower.contains('start your kyc');
-    final hasPickupCopy = lower.contains('pickup where you left off');
 
-    if (hasStartKyc && hasPickupCopy) {
-      // Split into two lines: "Start your KYC" + "or pickup where you left off" (Figma)
+    if (hasStartKyc) {
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: const [
           Text(
             'Start your KYC',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w700,
               color: KycTheme.textPrimary,
             ),
           ),
-          SizedBox(height: 4),
+          SizedBox(height: 8),
           Text(
-            'or pickup where you left off',
+            'Fast-track your 100% paperless Demat & Trading account opening in under 5 minutes.',
+            textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w400,
               color: KycTheme.textSecondary,
+              height: 1.4,
             ),
           ),
         ],
       );
     }
 
-    // Default single-line title for all other pages
-    return const Text(
-      '',
-      // This placeholder will be replaced below; kept here to satisfy const usage.
+    return Text(
+      rawTitle,
+      style: const TextStyle(
+        fontSize: 22,
+        fontWeight: FontWeight.w700,
+        color: KycTheme.textPrimary,
+      ),
+    );
+  }
+
+  Widget _buildBrandMark() {
+    return Image.asset(
+      AppAssets.rudraLogo,
+      height: 88,
+      fit: BoxFit.contain,
+      errorBuilder: (_, __, ___) => const _RudraBrandFallback(),
     );
   }
 
   Widget _buildContent() {
     if (skipScaffold) {
-      // When skipping scaffold, return scrollable content directly (no Expanded)
-      // This prevents overflow when used inside Expanded widget
-      final isFirstStep = title != null &&
-          title!.toLowerCase().contains('start your kyc') &&
-          title!.toLowerCase().contains('pickup where you left off');
+      final isFirstStep = _isStartKycHero;
       return SingleChildScrollView(
         padding: EdgeInsets.fromLTRB(
           KycTheme.spacingXl,
@@ -94,40 +105,14 @@ class KycLayout extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isFirstStep) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset(
-                        AppAssets.stoxboxLogo,
-                        height: 88,
-                        fit: BoxFit.contain,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
+                Center(child: _buildBrandMark()),
+                const SizedBox(height: 36),
               ],
               if (title != null) ...[
-                const SizedBox(height: 20),
-                if (title != null && title!
-                    .toLowerCase()
-                    .contains('start your kyc') &&
-                    title!
-                        .toLowerCase()
-                        .contains('pickup where you left off'))
-                  _buildTitleSection()
-                else
-                  Text(
-                    title!,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                      color: KycTheme.textPrimary,
-                    ),
-                  ),
-                const SizedBox(height: 16),
+                if (!isFirstStep) const SizedBox(height: 12),
+                _buildTitleSection(),
+                SizedBox(height: isFirstStep ? 28 : 16),
               ],
               child,
               if (showDocumentsSection) ...[
@@ -139,19 +124,10 @@ class KycLayout extends StatelessWidget {
         ),
       );
     }
-    
-    // Default: full layout with Expanded
+
     return Column(
       children: [
-        // Top bar: minimal header (logout/back aligned right)
-        _buildTopBar(null),
-        // --- Stepper (hidden temporarily) ---
-        // Uncomment when re-enabling stepper via stepperSteps / stepperIndex props.
-        // if (stepperSteps != null)
-        //   KycStepperBar(
-        //     steps: stepperSteps!,
-        //     currentIndex: stepperIndex ?? 0,
-        //   ),
+        _buildTopBar(),
         Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(
@@ -165,22 +141,7 @@ class KycLayout extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   if (title != null) ...[
-                    if (title != null && title!
-                        .toLowerCase()
-                        .contains('start your kyc') &&
-                        title!
-                            .toLowerCase()
-                            .contains('pickup where you left off'))
-                      _buildTitleSection()
-                    else
-                      Text(
-                        title!,
-                        style: const TextStyle(
-                          fontSize: KycTheme.fontSizeTitle,
-                          fontWeight: FontWeight.w700,
-                          color: KycTheme.textPrimary,
-                        ),
-                      ),
+                    _buildTitleSection(),
                     const SizedBox(height: KycTheme.spacingSm),
                   ],
                   child,
@@ -200,26 +161,24 @@ class KycLayout extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final content = _buildContent();
-    
+
     if (skipScaffold) {
-      // When skipping scaffold, just return content (for nested use)
       return content;
     }
-    
-    // Default: wrap in Scaffold and SafeArea
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: KycTheme.statusBar,
       child: Scaffold(
-        backgroundColor: KycTheme.background,
-        body: SafeArea(
-          child: content,
+        backgroundColor: Colors.transparent,
+        body: Container(
+          decoration: const BoxDecoration(gradient: KycTheme.pageGradient),
+          child: SafeArea(child: content),
         ),
       ),
     );
   }
 
-  Widget _buildTopBar(BuildContext? context) {
-    // If nothing to show, avoid taking vertical space
+  Widget _buildTopBar() {
     if (leading == null && trailing == null) {
       return const SizedBox.shrink();
     }
@@ -241,3 +200,22 @@ class KycLayout extends StatelessWidget {
   }
 }
 
+class _RudraBrandFallback extends StatelessWidget {
+  const _RudraBrandFallback();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 64,
+      height: 64,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: const LinearGradient(
+          colors: [KycTheme.brandGold, Color(0xFFF5C542)],
+        ),
+        boxShadow: KycTheme.cardShadowSm,
+      ),
+      child: const Icon(Icons.spa_rounded, color: Colors.white, size: 32),
+    );
+  }
+}
